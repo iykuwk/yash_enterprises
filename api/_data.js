@@ -1,0 +1,65 @@
+// Shared data module used by all API functions
+// Product list extracted from JUBILANT STOCK APRIL 26 sheet
+
+const PRODUCTS = [
+  "JUBIFIX ACRO BLACK 450 GMS","JUBIFIX ACRO WHITE 450 GMS","JUBIFIX CONSTRO 360 GMS",
+  "JUBIFIX CRAXO 1KG","JUBIFIX CRAXO 500 GMS","JUBIFIX GP PRO BLACK 260 ML",
+  "JUBIFIX GP PRO CLEAR 260 ML","JUBIFIX GP PRO WHITE 260 ML","JUBIFIX GP ULTRA BLACK",
+  "JUBIFIX GP ULTRA CLEAR","JUBIFIX GP ULTRA WHITE","JUBIFIX NEUTRO BLACK 270 ML",
+  "JUBIFIX NEUTRO CLEAR 270 ML","JUBIFIX NEUTRO WHITE 270 ML","JUBIFIX PASTO 450 GM",
+  "JUBIFIX PU BLACK-600 ML","JUBIFIX WEATHO BLACK 270 ML","JUBIFIX WEATHO CLEAR 270 ML",
+  "JUBIFIX WEATHO WHITE 270 ML","BOTTLE GIFT SET","DUFFLE BAG","GIFT SET 5%",
+  "JUBI 90 (292 GM / 400 ML)","JUBI 90 - 32 GMS","JUBI 90 - 64 GMS",
+  "JUBIBOND ALL IN ONE 100 ML","JUBIBOND ALL IN ONE 50 ML","JUBIBOND CPVC 100 ML",
+  "JUBIBOND CPVC 10 ML","JUBIBOND CPVC 200 ML","JUBIBOND CPVC 20 ML","JUBIBOND CPVC 50 ML",
+  "JUBIBOND PVC 100 ML","JUBIBOND PVC 200 ML","JUBIBOND PVC 50 ML","JUBIBOND PVC TUBE 10 ML",
+  "JUBIBOND UPVC 100 ML","JUBIBOND UPVC 1 LTR","JUBIBOND UPVC 200 ML","JUBIBOND UPVC 50 ML",
+  "JUBICLEAN 1 LTR","JUBICLEAN 500 ML","JUBICLEAN 5 LTR","JUBICLEAN BLASTO 40 GM",
+  "JUBIFAST 15 GM","JUBIFLEX 20 GMS","JUBIQUIK LV 111 20 GMS",
+  "JUBIQUIK LV 111 - 50 GM ( 120 PIC )","JUBIQUIK MAESTRO 125 GM","JUBIQUIK MAESTRO 50GM",
+  "JUBISEAL RAPID 1 KG","JUBISEAL RAPID 25 GM ( 40 UNIT - 1 JAR)",
+  "JUBISEAL RAPID 60 GM ( 30 UNIT = 1 JAR)","JUBISEAL RAPID 90 GM (30 UNIT - 1 JAR)",
+  "JUBISEALRAPID WHITE 25 GM","JUBISEAL RAPID WHITE 60 GM","JUBISEALRAPID WHITE 90 GM",
+  "JUBITAPE TEFFO 10 Mtr","JUBITAPE TEFFO 5 Mtr","JUBITITE 1.8 KG","JUBITITE 450 GMS",
+  "JUBITITE 900 GMS","JUBITITE INSTA CLEAR 12 GMS","JUBITITE INSTA CLEAR 180 GMS",
+  "JUBITITE INSTA CLEAR 1 KG","JUBITITE INSTA CLEAR 36 GMS","JUBITITE INSTA CLEAR 450 GMS",
+  "JUBITITE INSTA CLEAR 90 GMS","JUBITITE RESIN + HARDENER SET 450 GMS",
+  "JUBITITE TUBE PACK 13 GMS","JUBITITE TUBE PACK 180 GMS","JUBITITE TUBE PACK 36 GMS",
+  "JUBITITE TUBE PACK 90 GMS","JUBITITE UNO 1.8 KG","JUBITITE UNO 450 GM",
+  "MNT BROCHURES","MNT - CAP","MNT EASY CLICK PEN","MNT ESTIMATE PAD",
+  "MNT JUBIFIX ACRO POSTERS","MNT JUBIQUICK L V 11 POSTER","MNT JUBITITE INSTA CLEAR POSTERS",
+  "POCKET DIARIES","SEALANT GUN","WATER JUG CPD"
+];
+
+// In-memory challan counter (resets on cold start; for persistent storage use a DB or KV)
+// On Vercel, use Vercel KV or an external store for true persistence.
+// For a simple self-hosted / single-instance deploy, this file-based approach works.
+let _challanCounter = null;
+
+const fs = require('fs');
+const path = require('path');
+const COUNTER_FILE = path.join('/tmp', 'challan_counter.json');
+
+function readCounter() {
+  try {
+    if (fs.existsSync(COUNTER_FILE)) {
+      const data = JSON.parse(fs.readFileSync(COUNTER_FILE, 'utf8'));
+      return data.counter || 1;
+    }
+  } catch (_) {}
+  return 1;
+}
+
+function writeCounter(n) {
+  try { fs.writeFileSync(COUNTER_FILE, JSON.stringify({ counter: n })); } catch (_) {}
+}
+
+function getNextChallan() {
+  if (_challanCounter === null) _challanCounter = readCounter();
+  const current = _challanCounter;
+  _challanCounter = current + 1;
+  writeCounter(_challanCounter);
+  return current;
+}
+
+module.exports = { PRODUCTS, getNextChallan };

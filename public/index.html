@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Yash Enterprises — Inventory Entry</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f6fa;
+    --card: #ffffff;
+    --border: #e0e0e0;
+    --primary: #1a56db;
+    --primary-hover: #1342b5;
+    --danger: #e02424;
+    --success: #057a55;
+    --text: #111827;
+    --muted: #6b7280;
+    --highlight: #eff6ff;
+    --radius: 10px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 24px 16px 60px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+  header h1 { font-size: 1.5rem; font-weight: 700; color: var(--primary); }
+  header p  { font-size: 0.85rem; color: var(--muted); margin-top: 4px; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 24px;
+    max-width: 560px;
+    margin: 0 auto 20px;
+  }
+
+  .card h2 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 18px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    font-size: .8rem;
+  }
+
+  label {
+    display: block;
+    font-size: .85rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: var(--text);
+  }
+
+  input[type="date"],
+  input[type="number"],
+  input[type="text"] {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    font-size: .95rem;
+    color: var(--text);
+    background: #fafafa;
+    outline: none;
+    transition: border-color .15s;
+  }
+  input:focus { border-color: var(--primary); background: #fff; }
+
+  .row { margin-bottom: 16px; }
+
+  .type-toggle {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .type-toggle button {
+    flex: 1;
+    padding: 10px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    background: #fff;
+    font-size: .9rem;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--muted);
+    transition: all .15s;
+  }
+  .type-toggle button.active {
+    border-color: var(--primary);
+    background: var(--highlight);
+    color: var(--primary);
+  }
+
+  /* Autocomplete */
+  .autocomplete-wrap { position: relative; }
+  .autocomplete-wrap input { padding-right: 36px; }
+  .clear-btn {
+    position: absolute; right: 10px; top: 50%;
+    transform: translateY(-50%);
+    background: none; border: none;
+    color: var(--muted); cursor: pointer;
+    font-size: 1.1rem; line-height: 1;
+    display: none;
+  }
+  .clear-btn.visible { display: block; }
+
+  .dropdown {
+    position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+    max-height: 220px;
+    overflow-y: auto;
+    z-index: 100;
+    display: none;
+  }
+  .dropdown.open { display: block; }
+  .dropdown-item {
+    padding: 10px 14px;
+    font-size: .88rem;
+    cursor: pointer;
+    transition: background .1s;
+  }
+  .dropdown-item:hover,
+  .dropdown-item.focused { background: var(--highlight); color: var(--primary); }
+  .dropdown-empty {
+    padding: 12px 14px;
+    font-size: .85rem;
+    color: var(--muted);
+  }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    padding: 10px 20px;
+    border: none; border-radius: 8px;
+    font-size: .9rem; font-weight: 600;
+    cursor: pointer; transition: background .15s, transform .1s;
+  }
+  .btn:active { transform: scale(.98); }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { background: var(--primary-hover); }
+  .btn-success { background: var(--success); color: #fff; }
+  .btn-success:hover { background: #046344; }
+  .btn-ghost {
+    background: transparent; border: 1.5px solid var(--border);
+    color: var(--muted);
+  }
+  .btn-ghost:hover { border-color: var(--danger); color: var(--danger); }
+  .btn-full { width: 100%; margin-top: 6px; }
+
+  .challan-badge {
+    display: inline-block;
+    background: var(--highlight);
+    color: var(--primary);
+    border: 1px solid #bfdbfe;
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: 4px;
+  }
+
+  /* Items list */
+  .items-list { margin-top: 14px; }
+  .item-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px;
+    background: var(--highlight);
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    font-size: .88rem;
+  }
+  .item-row .item-name { flex: 1; font-weight: 600; }
+  .item-row .item-qty {
+    background: var(--primary); color: #fff;
+    border-radius: 5px; padding: 2px 9px;
+    font-size: .82rem; font-weight: 700; white-space: nowrap;
+  }
+  .item-row .remove-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--danger); font-size: 1rem; padding: 0 4px;
+    opacity: .7; transition: opacity .15s;
+  }
+  .item-row .remove-btn:hover { opacity: 1; }
+
+  /* Receipt */
+  .receipt-header {
+    text-align: center;
+    padding-bottom: 14px;
+    border-bottom: 2px dashed var(--border);
+    margin-bottom: 16px;
+  }
+  .receipt-header h3 { font-size: 1.1rem; font-weight: 700; }
+  .receipt-meta { font-size: .82rem; color: var(--muted); margin-top: 5px; }
+  .receipt-meta span { font-weight: 600; color: var(--text); }
+
+  .receipt-table {
+    width: 100%; border-collapse: collapse; font-size: .88rem;
+  }
+  .receipt-table th {
+    text-align: left; padding: 7px 10px;
+    background: var(--bg); color: var(--muted);
+    font-size: .78rem; text-transform: uppercase; letter-spacing: .04em;
+  }
+  .receipt-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  .receipt-table td:last-child { text-align: right; font-weight: 700; }
+  .receipt-table tr:last-child td { border-bottom: none; }
+
+  .action-row {
+    display: flex; gap: 10px; margin-top: 18px;
+  }
+  .action-row .btn { flex: 1; }
+
+  /* Toast */
+  #toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: #1f2937; color: #fff;
+    padding: 11px 22px; border-radius: 8px;
+    font-size: .88rem; font-weight: 500;
+    box-shadow: 0 4px 16px rgba(0,0,0,.25);
+    transition: transform .3s ease;
+    z-index: 999; white-space: nowrap;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+  #toast.error { background: var(--danger); }
+  #toast.success { background: var(--success); }
+
+  /* Spinner */
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2.5px solid rgba(255,255,255,.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin .6s linear infinite;
+    display: none;
+  }
+  .loading .spinner { display: inline-block; }
+  .loading .btn-text { display: none; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Step visibility */
+  .step { display: none; }
+  .step.active { display: block; }
+
+  .hint {
+    font-size: .78rem; color: var(--muted);
+    margin-top: 5px;
+  }
+
+  @media (max-width: 480px) {
+    .card { padding: 18px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Yash Enterprises</h1>
+  <p>JUBILANT Inventory Entry System</p>
+</header>
+
+<!-- STEP 1: Type + Date -->
+<div class="card step active" id="step1">
+  <h2>Step 1 — Entry Details</h2>
+
+  <div class="row">
+    <label>Entry Type</label>
+    <div class="type-toggle">
+      <button class="active" id="btn-purchases" onclick="setType('purchases')">📥 Purchases</button>
+      <button id="btn-sales" onclick="setType('sales')">📤 Sales</button>
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="date-input">Date</label>
+    <input type="date" id="date-input" />
+    <p class="hint">Press Tab or click Next after entering date.</p>
+  </div>
+
+  <button class="btn btn-primary btn-full" onclick="goToStep2()">
+    Next →
+  </button>
+</div>
+
+<!-- STEP 2: Products -->
+<div class="card step" id="step2">
+  <h2>Step 2 — Add Products</h2>
+
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+    <div>
+      <div class="challan-badge" id="challan-display">—</div>
+      <div class="hint" id="type-date-display"></div>
+    </div>
+    <button class="btn btn-ghost" style="font-size:.8rem; padding:6px 12px" onclick="goBackToStep1()">← Edit</button>
+  </div>
+
+  <!-- Product search -->
+  <div class="row">
+    <label for="product-input">Product <span style="color:var(--muted);font-weight:400">(type to search)</span></label>
+    <div class="autocomplete-wrap">
+      <input type="text" id="product-input" placeholder="e.g. JUBIFIX ACRO BLACK" autocomplete="off"
+             oninput="onProductInput()" onkeydown="onProductKeydown(event)" />
+      <button class="clear-btn" id="clear-product" onclick="clearProduct()">✕</button>
+      <div class="dropdown" id="product-dropdown"></div>
+    </div>
+  </div>
+
+  <!-- Qty (shown after product selected) -->
+  <div class="row" id="qty-row" style="display:none;">
+    <label for="qty-input">Quantity for <strong id="selected-product-label"></strong></label>
+    <input type="number" id="qty-input" min="1" placeholder="Enter quantity"
+           onkeydown="onQtyKeydown(event)" />
+    <p class="hint">Press Enter to add product.</p>
+  </div>
+
+  <button class="btn btn-primary" id="add-btn" style="display:none; margin-top:4px;" onclick="addItem()">
+    + Add Product
+  </button>
+
+  <!-- Items added so far -->
+  <div class="items-list" id="items-list"></div>
+
+  <div style="margin-top:18px; display:flex; gap:10px;">
+    <button class="btn btn-ghost" onclick="goBackToStep1()">← Back</button>
+    <button class="btn btn-primary" style="flex:1" onclick="goToReceipt()" id="review-btn" disabled>
+      Review & Confirm →
+    </button>
+  </div>
+</div>
+
+<!-- STEP 3: Receipt -->
+<div class="card step" id="step3">
+  <h2>Step 3 — Confirm Entry</h2>
+
+  <div class="receipt-header">
+    <h3 id="receipt-type-label">PURCHASE CHALLAN</h3>
+    <div class="receipt-meta">
+      Date: <span id="r-date"></span> &nbsp;|&nbsp; Challan No: <span id="r-challan"></span>
+    </div>
+  </div>
+
+  <table class="receipt-table">
+    <thead>
+      <tr><th>#</th><th>Product</th><th>Qty</th></tr>
+    </thead>
+    <tbody id="receipt-body"></tbody>
+  </table>
+
+  <div class="action-row">
+    <button class="btn btn-ghost" onclick="goBackToStep2()">← Edit</button>
+    <button class="btn btn-success" id="confirm-btn" onclick="confirmEntry()">
+      <span class="spinner"></span>
+      <span class="btn-text">✓ Confirm & Download Excel</span>
+    </button>
+  </div>
+
+  <p class="hint" style="margin-top:12px; text-align:center;">
+    This will update the Excel file and download it to your device.
+  </p>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+// ── State ────────────────────────────────────────────────────
+let state = {
+  type: 'purchases',
+  date: '',
+  challan: null,
+  items: [],         // [{product, qty}]
+  products: [],      // full list from API
+  filtered: [],      // current autocomplete results
+  focusedIndex: -1,  // keyboard nav index
+  selectedProduct: null,
+};
+
+// ── Init ────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', async () => {
+  // Set today's date
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('date-input').value = today;
+
+  // Load products
+  try {
+    const res = await fetch('/api/products');
+    const data = await res.json();
+    state.products = data.products || [];
+  } catch(e) {
+    showToast('Could not load products. Check connection.', 'error');
+  }
+});
+
+// ── Type toggle ─────────────────────────────────────────────
+function setType(t) {
+  state.type = t;
+  document.getElementById('btn-purchases').classList.toggle('active', t === 'purchases');
+  document.getElementById('btn-sales').classList.toggle('active', t === 'sales');
+}
+
+// ── Step navigation ─────────────────────────────────────────
+async function goToStep2() {
+  const d = document.getElementById('date-input').value;
+  if (!d) { showToast('Please select a date.', 'error'); return; }
+  state.date = d;
+  state.items = [];
+
+  // Fetch challan number
+  if (!state.challan) {
+    try {
+      const res = await fetch('/api/challan');
+      const data = await res.json();
+      state.challan = data.challan;
+    } catch(e) {
+      state.challan = 1;
+    }
+  }
+
+  document.getElementById('challan-display').textContent = `Challan #${state.challan}`;
+  document.getElementById('type-date-display').textContent =
+    `${state.type === 'purchases' ? '📥 Purchase' : '📤 Sale'} · ${formatDate(state.date)}`;
+
+  renderItems();
+  showStep('step2');
+  setTimeout(() => document.getElementById('product-input').focus(), 100);
+}
+
+function goBackToStep1() {
+  state.challan = null; // re-fetch next time
+  showStep('step1');
+}
+
+function goBackToStep2() {
+  showStep('step2');
+  renderItems();
+}
+
+function goToReceipt() {
+  if (state.items.length === 0) {
+    showToast('Add at least one product.', 'error');
+    return;
+  }
+  // Populate receipt
+  document.getElementById('receipt-type-label').textContent =
+    state.type === 'purchases' ? 'PURCHASE CHALLAN' : 'SALES CHALLAN';
+  document.getElementById('r-date').textContent = formatDate(state.date);
+  document.getElementById('r-challan').textContent = state.challan;
+
+  const tbody = document.getElementById('receipt-body');
+  tbody.innerHTML = state.items.map((item, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td>${item.product}</td>
+      <td>${item.qty}</td>
+    </tr>
+  `).join('');
+
+  showStep('step3');
+}
+
+function showStep(id) {
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ── Product autocomplete ─────────────────────────────────────
+function onProductInput() {
+  const q = document.getElementById('product-input').value.trim().toUpperCase();
+  const clearBtn = document.getElementById('clear-product');
+
+  clearBtn.classList.toggle('visible', q.length > 0);
+  document.getElementById('qty-row').style.display = 'none';
+  document.getElementById('add-btn').style.display = 'none';
+  state.selectedProduct = null;
+
+  if (q.length < 1) { closeDropdown(); return; }
+
+  state.filtered = state.products.filter(p => p.toUpperCase().includes(q)).slice(0, 12);
+  state.focusedIndex = -1;
+  renderDropdown();
+}
+
+function onProductKeydown(e) {
+  const dd = document.getElementById('product-dropdown');
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    state.focusedIndex = Math.min(state.focusedIndex + 1, state.filtered.length - 1);
+    renderDropdown();
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    state.focusedIndex = Math.max(state.focusedIndex - 1, 0);
+    renderDropdown();
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (state.focusedIndex >= 0 && state.filtered[state.focusedIndex]) {
+      selectProduct(state.filtered[state.focusedIndex]);
+    } else if (state.filtered.length === 1) {
+      selectProduct(state.filtered[0]);
+    }
+  } else if (e.key === 'Escape') {
+    closeDropdown();
+  }
+}
+
+function renderDropdown() {
+  const dd = document.getElementById('product-dropdown');
+  if (state.filtered.length === 0) {
+    dd.innerHTML = `<div class="dropdown-empty">No products found</div>`;
+  } else {
+    dd.innerHTML = state.filtered.map((p, i) => `
+      <div class="dropdown-item ${i === state.focusedIndex ? 'focused' : ''}"
+           onmousedown="selectProduct('${p.replace(/'/g,"\\'")}')">
+        ${highlightMatch(p, document.getElementById('product-input').value.trim())}
+      </div>
+    `).join('');
+  }
+  dd.classList.add('open');
+}
+
+function highlightMatch(text, query) {
+  if (!query) return text;
+  const re = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
+  return text.replace(re, '<strong>$1</strong>');
+}
+
+function selectProduct(name) {
+  state.selectedProduct = name;
+  document.getElementById('product-input').value = name;
+  document.getElementById('clear-product').classList.add('visible');
+  document.getElementById('selected-product-label').textContent = name;
+  document.getElementById('qty-row').style.display = 'block';
+  document.getElementById('add-btn').style.display = 'inline-flex';
+  closeDropdown();
+  setTimeout(() => document.getElementById('qty-input').focus(), 50);
+}
+
+function clearProduct() {
+  document.getElementById('product-input').value = '';
+  document.getElementById('clear-product').classList.remove('visible');
+  document.getElementById('qty-row').style.display = 'none';
+  document.getElementById('add-btn').style.display = 'none';
+  state.selectedProduct = null;
+  closeDropdown();
+  document.getElementById('product-input').focus();
+}
+
+function closeDropdown() {
+  document.getElementById('product-dropdown').classList.remove('open');
+  state.filtered = [];
+}
+
+// ── Quantity handling ────────────────────────────────────────
+function onQtyKeydown(e) {
+  if (e.key === 'Enter') { e.preventDefault(); addItem(); }
+}
+
+function addItem() {
+  if (!state.selectedProduct) { showToast('Select a product first.', 'error'); return; }
+  const qtyInput = document.getElementById('qty-input');
+  const qty = parseInt(qtyInput.value, 10);
+  if (!qty || qty < 1) { showToast('Enter a valid quantity.', 'error'); qtyInput.focus(); return; }
+
+  // Check duplicate
+  const existing = state.items.find(i => i.product === state.selectedProduct);
+  if (existing) {
+    existing.qty += qty;
+    showToast(`Updated ${state.selectedProduct} → ${existing.qty}`, 'success');
+  } else {
+    state.items.push({ product: state.selectedProduct, qty });
+  }
+
+  // Reset for next product
+  clearProduct();
+  qtyInput.value = '';
+  renderItems();
+
+  document.getElementById('review-btn').disabled = state.items.length === 0;
+  document.getElementById('product-input').focus();
+}
+
+function removeItem(i) {
+  state.items.splice(i, 1);
+  renderItems();
+  document.getElementById('review-btn').disabled = state.items.length === 0;
+}
+
+function renderItems() {
+  const list = document.getElementById('items-list');
+  if (state.items.length === 0) {
+    list.innerHTML = `<p style="color:var(--muted);font-size:.85rem;text-align:center;padding:12px 0;">No products added yet.</p>`;
+    return;
+  }
+  list.innerHTML = state.items.map((item, i) => `
+    <div class="item-row">
+      <span class="item-name">${item.product}</span>
+      <span class="item-qty">Qty: ${item.qty}</span>
+      <button class="remove-btn" onclick="removeItem(${i})" title="Remove">✕</button>
+    </div>
+  `).join('');
+  document.getElementById('review-btn').disabled = false;
+}
+
+// ── Confirm & Download ───────────────────────────────────────
+async function confirmEntry() {
+  const btn = document.getElementById('confirm-btn');
+  btn.classList.add('loading');
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/entry', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: state.type,
+        date: state.date,
+        challan: state.challan,
+        items: state.items,
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Server error');
+    }
+
+    // Trigger download
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `inventory_challan_${state.challan}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    showToast('Entry saved! Excel downloaded.', 'success');
+
+    // Reset for next entry
+    setTimeout(() => {
+      state.challan = null;
+      state.items = [];
+      showStep('step1');
+    }, 1800);
+
+  } catch(e) {
+    showToast(e.message || 'Failed to save entry.', 'error');
+  } finally {
+    btn.classList.remove('loading');
+    btn.disabled = false;
+  }
+}
+
+// ── Helpers ──────────────────────────────────────────────────
+function formatDate(d) {
+  if (!d) return '';
+  const [y, m, day] = d.split('-');
+  return `${day}/${m}/${y}`;
+}
+
+let toastTimer;
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = type ? `show ${type}` : 'show';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.className = ''; }, 3000);
+}
+
+// Close dropdown on outside click
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.autocomplete-wrap')) closeDropdown();
+});
+</script>
+
+</body>
+</html>
