@@ -37,8 +37,9 @@ const PRODUCTS = [
 let _challanCounter = null;
 
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
-const COUNTER_FILE = path.join('/tmp', 'challan_counter.json');
+const COUNTER_FILE = path.join(os.tmpdir(), 'challan_counter.json');
 
 function readCounter() {
   try {

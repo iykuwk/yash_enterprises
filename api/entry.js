@@ -5,11 +5,12 @@
 const ExcelJS = require('exceljs');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 
 // Template is bundled with the deployment under /api/template/inventory.xlsx
-// Vercel read-only filesystem: we read from template, write to /tmp
+// The server writes output to the OS temp directory.
 const TEMPLATE_PATH = path.join(__dirname, 'template', 'inventory.xlsx');
-const OUTPUT_PATH   = path.join('/tmp', 'inventory_out.xlsx');
+const OUTPUT_PATH   = path.join(os.tmpdir(), 'inventory_out.xlsx');
 
 // Sheet names
 const SHEET = {
