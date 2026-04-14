@@ -2,7 +2,13 @@
   "name": "yash-inventory",
   "version": "1.0.0",
   "private": true,
+  "scripts": {
+    "dev": "vercel dev --listen 3000"
+  },
   "dependencies": {
     "exceljs": "^4.4.0"
+  },
+  "devDependencies": {
+    "vercel": "^34.0.0"
   }
 }
