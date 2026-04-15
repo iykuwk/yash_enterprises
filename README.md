@@ -1,54 +1,44 @@
-# Yash Enterprises — Inventory Entry System
+# Yash Enterprises - Inventory Entry System
 
-A minimal web app for entry of Purchases & Sales challan data into Excel.
+Web app for purchases/sales entry that writes stock updates directly to Google Sheets.
 
-## Setup & Deploy (5 minutes)
+## Run locally
 
-### 1. Install dependencies
-```
-npm install
-```
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
+2. Copy `.env.example` to `.env` and fill credentials.
+3. Share your Google Sheet with the service-account email as **Editor**.
+4. Start dev server:
+   ```bash
+   npm run dev
+   ```
+5. Open [http://localhost:3000](http://localhost:3000)
 
-### 2. Add your Excel file
-Place your `inventory.xlsx` file at:
-```
-api/template/inventory.xlsx
-```
-(Already included if you're using the downloaded zip.)
+## Required environment variables
 
-### 3. Deploy to Vercel
-```bash
-npm install -g vercel   # if not installed
-vercel                  # follow prompts
-```
+- `GOOGLE_SHEET_ID` - Spreadsheet ID (already set to your provided sheet by default)
+- `GOOGLE_STOCK_SHEET_NAME` - Stock tab name (default: `JUBILANT STOCK APRIL 26`)
+- `GOOGLE_LOG_SHEET_NAME` - Log tab name used for entry history (default: `Entry Log`)
+- `GOOGLE_SERVICE_ACCOUNT_EMAIL` - Google Cloud service account email
+- `GOOGLE_PRIVATE_KEY` - Private key for the service account (keep `\n` escaped)
 
-That's it. Vercel auto-detects the `api/` serverless functions.
+## Project structure
 
----
+- `server.js` - Express server, static hosting, API route wiring
+- `public/index.html` - Complete frontend UI + client logic
+- `api/products.js` - Returns product list for autocomplete
+- `api/challan.js` - Returns next challan number
+- `api/entry.js` - Validates entry and writes to Google Sheets
+- `api/googleSheets.js` - Google Sheets auth + stock update logic
+- `api/_data.js` - Master product list and challan counter
 
-## Local development
-```bash
-npm install -g vercel
-vercel dev
-# Open http://localhost:3000
-```
+## How sheet update works
 
----
-
-## How it works
-
-| Step | What happens |
-|------|--------------|
-| 1 | Choose Purchases or Sales, pick a date |
-| 2 | Auto-generated challan number assigned |
-| 3 | Search & add products with quantities (keyboard friendly) |
-| 4 | Review receipt, click Confirm |
-| 5 | Excel file updated + downloaded to your device |
-
----
-
-## Notes
-- Challan counter persists in `/tmp` on the server (resets on Vercel cold starts).  
-  For permanent persistence, replace `_data.js` with Vercel KV or a simple DB.
-- The Excel template (`api/template/inventory.xlsx`) is read-only; updates are written to `/tmp/inventory_out.xlsx` and served as a download.
-- Product list is hardcoded from your stock sheet for fast search. To update products, edit `PRODUCTS` in `api/_data.js`.
+- Products are matched against column `B` in `JUBILANT STOCK APRIL 26`.
+- For each product entry:
+  - Purchases update column `D`
+  - Sales update column `E`
+  - Balance in column `F` is recalculated as `Opening + Purchases - Sales`
+- Every submitted item is also appended to the `Entry Log` tab.

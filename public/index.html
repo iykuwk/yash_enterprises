@@ -366,12 +366,12 @@
     <button class="btn btn-ghost" onclick="goBackToStep2()">← Edit</button>
     <button class="btn btn-success" id="confirm-btn" onclick="confirmEntry()">
       <span class="spinner"></span>
-      <span class="btn-text">✓ Confirm & Download Excel</span>
+      <span class="btn-text">✓ Confirm & Save to Google Sheet</span>
     </button>
   </div>
 
   <p class="hint" style="margin-top:12px; text-align:center;">
-    This will update the Excel file and download it to your device.
+    This will update your Google Sheet directly.
   </p>
 </div>
 
@@ -639,16 +639,12 @@ async function confirmEntry() {
       throw new Error(err.error || 'Server error');
     }
 
-    // Trigger download
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `inventory_challan_${state.challan}.xlsx`;
-    a.click();
-    URL.revokeObjectURL(url);
-
-    showToast('Entry saved! Excel downloaded.', 'success');
+    const result = await res.json();
+    if (Array.isArray(result.notFoundProducts) && result.notFoundProducts.length > 0) {
+      showToast(`Saved with warnings. Missing in sheet: ${result.notFoundProducts.length}`, 'error');
+    } else {
+      showToast('Entry saved to Google Sheet.', 'success');
+    }
 
     // Reset for next entry
     setTimeout(() => {
