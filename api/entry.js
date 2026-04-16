@@ -1,5 +1,5 @@
 // POST /api/entry
-// Body: { type: "purchases"|"sales", date, challan, items: [{product, qty}] }
+// Body: { type: "purchases"|"sales", date, challan, customerName, items: [{product, qty}] }
 // Updates Google Sheet directly.
 const { updateInventoryInSheet } = require('./googleSheets');
 
@@ -10,13 +10,13 @@ module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).end();
 
-  const { type, date, challan, items } = req.body;
-  if (!type || !date || !challan || !Array.isArray(items) || items.length === 0) {
+  const { type, date, challan, customerName, items } = req.body;
+  if (!type || !date || !challan || !customerName || !Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
   try {
-    const result = await updateInventoryInSheet({ type, date, challan, items });
+    const result = await updateInventoryInSheet({ type, date, challan, customerName, items });
     res.json({
       success: true,
       message: 'Entry saved to Google Sheet.',

@@ -293,6 +293,11 @@
     <p class="hint">Press Tab or click Next after entering date.</p>
   </div>
 
+  <div class="row">
+    <label for="customer-name-input">Customer Name</label>
+    <input type="text" id="customer-name-input" placeholder="Enter customer name" />
+  </div>
+
   <button class="btn btn-primary btn-full" onclick="goToStep2()">
     Next →
   </button>
@@ -353,6 +358,9 @@
     <div class="receipt-meta">
       Date: <span id="r-date"></span> &nbsp;|&nbsp; Challan No: <span id="r-challan"></span>
     </div>
+    <div class="receipt-meta" style="margin-top:3px;">
+      Customer: <span id="r-customer-name"></span>
+    </div>
   </div>
 
   <table class="receipt-table">
@@ -383,6 +391,7 @@
 let state = {
   type: 'purchases',
   date: '',
+  customerName: '',
   challan: null,
   items: [],         // [{product, qty}]
   products: [],      // full list from API
@@ -417,8 +426,11 @@ function setType(t) {
 // ── Step navigation ─────────────────────────────────────────
 async function goToStep2() {
   const d = document.getElementById('date-input').value;
+  const customerName = document.getElementById('customer-name-input').value.trim();
   if (!d) { showToast('Please select a date.', 'error'); return; }
+  if (!customerName) { showToast('Please enter customer name.', 'error'); return; }
   state.date = d;
+  state.customerName = customerName;
   state.items = [];
 
   // Fetch challan number
@@ -461,6 +473,7 @@ function goToReceipt() {
     state.type === 'purchases' ? 'PURCHASE CHALLAN' : 'SALES CHALLAN';
   document.getElementById('r-date').textContent = formatDate(state.date);
   document.getElementById('r-challan').textContent = state.challan;
+  document.getElementById('r-customer-name').textContent = state.customerName;
 
   const tbody = document.getElementById('receipt-body');
   tbody.innerHTML = state.items.map((item, i) => `
@@ -630,6 +643,7 @@ async function confirmEntry() {
         type: state.type,
         date: state.date,
         challan: state.challan,
+        customerName: state.customerName,
         items: state.items,
       }),
     });
@@ -650,6 +664,8 @@ async function confirmEntry() {
     setTimeout(() => {
       state.challan = null;
       state.items = [];
+      state.customerName = '';
+      document.getElementById('customer-name-input').value = '';
       showStep('step1');
     }, 1800);
 
