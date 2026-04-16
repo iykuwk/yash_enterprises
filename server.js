@@ -11,6 +11,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.get('/api/products', require('./api/products'));
 app.get('/api/challan', require('./api/challan'));
 app.post('/api/entry', require('./api/entry'));
+app.get('/api/customers', require('./api/customers'));
+app.get('/api/challan-entry', require('./api/challan-entry'));
+app.post('/api/challan-entry', require('./api/challan-entry'));
 
 app.use((req, res) => {
   if (req.path.startsWith('/api/')) {

@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { google } = require('googleapis');
+const ExcelJS = require('exceljs');
 
 const SHEET_ID = process.env.GOOGLE_SHEET_ID || '1NxMK1jb6DBw45ttqAplRSq2IJcQzUFIEMPKdfN2tHb4';
 const STOCK_SHEET_NAME = process.env.GOOGLE_STOCK_SHEET_NAME || 'JUBILANT STOCK APRIL 26';
@@ -12,6 +13,10 @@ const LOG_SHEET_NAME = process.env.GOOGLE_LOG_SHEET_NAME || 'Entry Log';
 const CUSTOMER_LABEL_CELL = process.env.GOOGLE_CUSTOMER_LABEL_CELL || 'B95';
 const CUSTOMER_VALUE_CELL = process.env.GOOGLE_CUSTOMER_VALUE_CELL || 'C95';
 const DELIVERY_CHALLAN_ANCHOR_TEXT = (process.env.GOOGLE_DELIVERY_CHALLAN_ANCHOR_TEXT || 'DELIVERY CHALLAN NO').toUpperCase();
+const CUSTOMER_FILE_PATH = process.env.CUSTOMER_LIST_FILE || path.join(process.cwd(), 'yash_customer_list.xlsx');
+const CUSTOMER_SHEET_NAME = process.env.CUSTOMER_LIST_SHEET || null;
+const LOG_HEADERS = ['Timestamp', 'Date', 'Type', 'Challan', 'Customer Name', 'Product', 'Quantity', 'Price', 'Edited At', 'Entry Mode'];
+let cachedCustomers = null;
 
 function getMonthYearFromDate(dateText) {
   const d = new Date(dateText);
@@ -43,6 +48,23 @@ function parseQty(value) {
 
 function asUnit(value) {
   return `${Math.trunc(Number(value) || 0)} UNIT`;
+}
+
+function parsePrice(value) {
+  if (value === null || value === undefined || value === '') return 0;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function normalizeItems(items) {
+  if (!Array.isArray(items)) return [];
+  return items
+    .map((item) => ({
+      product: String(item.product || '').trim(),
+      qty: parseInt(item.qty, 10) || 0,
+      price: parsePrice(item.price),
+    }))
+    .filter((item) => item.product && item.qty > 0);
 }
 
 function toColumnLetter(colNum) {
@@ -171,12 +193,30 @@ async function ensureLogSheet(sheets) {
 
   await sheets.spreadsheets.values.update({
     spreadsheetId: SHEET_ID,
-    range: `'${LOG_SHEET_NAME}'!A1:G1`,
+    range: `'${LOG_SHEET_NAME}'!A1:J1`,
     valueInputOption: 'RAW',
     requestBody: {
-      values: [['Timestamp', 'Date', 'Type', 'Challan', 'Customer Name', 'Product', 'Quantity']],
+      values: [LOG_HEADERS],
     },
   });
+}
+
+async function ensureLogHeaders(sheets) {
+  await ensureLogSheet(sheets);
+  const existing = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: `'${LOG_SHEET_NAME}'!A1:J1`,
+  });
+  const row = (existing.data.values && existing.data.values[0]) || [];
+  const needsUpdate = LOG_HEADERS.some((header, idx) => String(row[idx] || '').trim() !== header);
+  if (needsUpdate) {
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SHEET_ID,
+      range: `'${LOG_SHEET_NAME}'!A1:J1`,
+      valueInputOption: 'RAW',
+      requestBody: { values: [LOG_HEADERS] },
+    });
+  }
 }
 
 async function writeTransactionSheet({ sheets, type, date, challan, customerName, mergedQtyByProduct }) {
@@ -245,109 +285,222 @@ async function writeTransactionSheet({ sheets, type, date, challan, customerName
   });
 }
 
-async function updateInventoryInSheet({ type, date, challan, customerName, items }) {
-  const sheets = getSheetsClient();
-  const stockSheetName = getMonthlyStockSheetName(date);
-  await ensureSheetFromTemplate({
-    sheets,
-    templateTitle: STOCK_TEMPLATE_SHEET_NAME,
-    targetTitle: stockSheetName,
-  });
-  const range = `'${stockSheetName}'!B4:F200`;
+async function updateInventoryInSheet({ type, date, challan, customerName, items, editedAt = '', entryMode = 'new' }) {
+  try {
+    const sheets = getSheetsClient();
+    const cleanItems = normalizeItems(items);
+    if (cleanItems.length === 0) {
+      throw new Error('No valid items found in request body.');
+    }
+    const stockSheetName = getMonthlyStockSheetName(date);
+    await ensureSheetFromTemplate({
+      sheets,
+      templateTitle: STOCK_TEMPLATE_SHEET_NAME,
+      targetTitle: stockSheetName,
+    });
+    const range = `'${stockSheetName}'!B4:F200`;
 
-  const { data } = await sheets.spreadsheets.values.get({
-    spreadsheetId: SHEET_ID,
-    range,
-  });
+    const { data } = await sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range,
+    });
 
-  const rows = data.values || [];
-  const rowMap = {};
-  rows.forEach((row, idx) => {
-    const product = (row[0] || '').trim().toUpperCase();
-    if (product) rowMap[product] = { rowIndex: idx + 4, row };
-  });
+    const rows = data.values || [];
+    const rowMap = {};
+    rows.forEach((row, idx) => {
+      const product = (row[0] || '').trim().toUpperCase();
+      if (product) rowMap[product] = { rowIndex: idx + 4, row };
+    });
 
-  const mergedQtyByProduct = {};
-  for (const item of items) {
-    const key = String(item.product || '').trim().toUpperCase();
-    if (!key) continue;
-    mergedQtyByProduct[key] = (mergedQtyByProduct[key] || 0) + (parseInt(item.qty, 10) || 0);
-  }
-
-  const updates = [];
-  const notFoundProducts = [];
-
-  Object.entries(mergedQtyByProduct).forEach(([key, qty]) => {
-    const target = rowMap[key];
-    if (!target) {
-      notFoundProducts.push(key);
-      return;
+    const mergedQtyByProduct = {};
+    for (const item of cleanItems) {
+      const key = String(item.product || '').trim().toUpperCase();
+      if (!key) continue;
+      mergedQtyByProduct[key] = (mergedQtyByProduct[key] || 0) + (parseInt(item.qty, 10) || 0);
     }
 
-    const opening = parseQty(target.row[1]);
-    const purchases = parseQty(target.row[2]);
-    const sales = parseQty(target.row[3]);
+    const updates = [];
+    const notFoundProducts = [];
 
-    const nextPurchases = type === 'purchases' ? purchases + qty : purchases;
-    const nextSales = type === 'sales' ? sales + qty : sales;
-    const nextBalance = opening + nextPurchases - nextSales;
+    Object.entries(mergedQtyByProduct).forEach(([key, qty]) => {
+      const target = rowMap[key];
+      if (!target) {
+        notFoundProducts.push(key);
+        return;
+      }
+
+      const opening = parseQty(target.row[1]);
+      const purchases = parseQty(target.row[2]);
+      const sales = parseQty(target.row[3]);
+
+      const nextPurchases = type === 'purchases' ? purchases + qty : purchases;
+      const nextSales = type === 'sales' ? sales + qty : sales;
+      const nextBalance = opening + nextPurchases - nextSales;
+
+      updates.push({
+        range: `'${stockSheetName}'!D${target.rowIndex}:F${target.rowIndex}`,
+        values: [[asUnit(nextPurchases), asUnit(nextSales), asUnit(nextBalance)]],
+      });
+    });
+
+    await writeTransactionSheet({ sheets, type, date, challan, customerName, mergedQtyByProduct });
+
+    const customerAreaRes = await sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: `'${stockSheetName}'!A1:ZZ220`,
+    });
+    const customerAreaValues = customerAreaRes.data.values || [];
+    const { labelCell, valueCell } = getCustomerPlacement(customerAreaValues);
 
     updates.push({
-      range: `'${stockSheetName}'!D${target.rowIndex}:F${target.rowIndex}`,
-      values: [[asUnit(nextPurchases), asUnit(nextSales), asUnit(nextBalance)]],
+      range: `'${stockSheetName}'!${labelCell}:${valueCell}`,
+      values: [['Customer Name', customerName || '']],
     });
-  });
 
-  await writeTransactionSheet({ sheets, type, date, challan, customerName, mergedQtyByProduct });
+    if (updates.length > 0) {
+      await sheets.spreadsheets.values.batchUpdate({
+        spreadsheetId: SHEET_ID,
+        requestBody: {
+          valueInputOption: 'RAW',
+          data: updates,
+        },
+      });
+    }
 
-  const customerAreaRes = await sheets.spreadsheets.values.get({
-    spreadsheetId: SHEET_ID,
-    range: `'${stockSheetName}'!A1:ZZ220`,
-  });
-  const customerAreaValues = customerAreaRes.data.values || [];
-  const { labelCell, valueCell } = getCustomerPlacement(customerAreaValues);
+    await ensureLogHeaders(sheets);
+    const nowIso = new Date().toISOString();
+    const logRows = cleanItems.map((item) => [
+      nowIso,
+      date,
+      type,
+      challan,
+      customerName || '',
+      item.product,
+      parseInt(item.qty, 10) || 0,
+      parsePrice(item.price),
+      editedAt || '',
+      entryMode,
+    ]);
 
-  updates.push({
-    range: `'${stockSheetName}'!${labelCell}:${valueCell}`,
-    values: [['Customer Name', customerName || '']],
-  });
-
-  if (updates.length > 0) {
-    await sheets.spreadsheets.values.batchUpdate({
+    await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
-      requestBody: {
-        valueInputOption: 'RAW',
-        data: updates,
-      },
+      range: `'${LOG_SHEET_NAME}'!A:J`,
+      valueInputOption: 'RAW',
+      insertDataOption: 'INSERT_ROWS',
+      requestBody: { values: logRows },
     });
+
+    return {
+      updatedProducts: updates.length,
+      notFoundProducts,
+    };
+  } catch (error) {
+    console.error('Google Sheets write failed:', {
+      message: error.message,
+      type,
+      date,
+      challan,
+      itemCount: Array.isArray(items) ? items.length : 0,
+      entryMode,
+    });
+    throw error;
   }
+}
 
-  await ensureLogSheet(sheets);
-  const nowIso = new Date().toISOString();
-  const logRows = items.map((item) => [
-    nowIso,
-    date,
-    type,
-    challan,
-    customerName || '',
-    item.product,
-    parseInt(item.qty, 10) || 0,
-  ]);
+function buildBatchKey(row) {
+  return `${row[0] || ''}|${row[8] || ''}|${row[9] || 'new'}`;
+}
 
-  await sheets.spreadsheets.values.append({
+function parseLogRow(row) {
+  return {
+    timestamp: row[0] || '',
+    date: row[1] || '',
+    type: row[2] || '',
+    challan: row[3] || '',
+    customerName: row[4] || '',
+    product: row[5] || '',
+    qty: parseInt(row[6], 10) || 0,
+    price: parsePrice(row[7]),
+    editedAt: row[8] || '',
+    entryMode: row[9] || 'new',
+  };
+}
+
+async function getChallanEntry({ type, challan }) {
+  const sheets = getSheetsClient();
+  await ensureLogHeaders(sheets);
+  const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
-    range: `'${LOG_SHEET_NAME}'!A:G`,
-    valueInputOption: 'RAW',
-    insertDataOption: 'INSERT_ROWS',
-    requestBody: { values: logRows },
+    range: `'${LOG_SHEET_NAME}'!A2:J`,
   });
+  const rows = res.data.values || [];
+  const filtered = rows
+    .map(parseLogRow)
+    .filter((row) => String(row.challan) === String(challan) && String(row.type) === String(type));
+
+  if (filtered.length === 0) return null;
+
+  const bucket = new Map();
+  filtered.forEach((row) => {
+    const key = buildBatchKey([row.timestamp, '', '', '', '', '', '', '', row.editedAt, row.entryMode]);
+    if (!bucket.has(key)) bucket.set(key, []);
+    bucket.get(key).push(row);
+  });
+
+  const latest = Array.from(bucket.values()).sort((a, b) => {
+    const aTs = Date.parse(a[0].timestamp) || 0;
+    const bTs = Date.parse(b[0].timestamp) || 0;
+    return bTs - aTs;
+  })[0];
 
   return {
-    updatedProducts: updates.length,
-    notFoundProducts,
+    type: latest[0].type,
+    challan: latest[0].challan,
+    date: latest[0].date,
+    customerName: latest[0].customerName || '',
+    editedAt: latest[0].editedAt || '',
+    items: latest.map((row) => ({
+      product: row.product,
+      qty: row.qty,
+      price: row.price,
+    })),
   };
+}
+
+async function loadCustomersFromFile() {
+  if (cachedCustomers) return cachedCustomers;
+  if (!fs.existsSync(CUSTOMER_FILE_PATH)) {
+    cachedCustomers = [];
+    return cachedCustomers;
+  }
+
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.readFile(CUSTOMER_FILE_PATH);
+  const worksheet = CUSTOMER_SHEET_NAME
+    ? workbook.getWorksheet(CUSTOMER_SHEET_NAME)
+    : workbook.worksheets[0];
+
+  if (!worksheet) {
+    cachedCustomers = [];
+    return cachedCustomers;
+  }
+
+  const set = new Set();
+  worksheet.eachRow((row, rowNumber) => {
+    // Column A contains outlet names in yash_customer_list.xlsx
+    const outletRaw = row.getCell(1).value;
+    const outletName = String(outletRaw || '').trim();
+    if (!outletName) return;
+    if (rowNumber === 1 && /outlet\s*name/i.test(outletName)) return;
+    set.add(outletName);
+  });
+
+  cachedCustomers = Array.from(set).sort((a, b) => a.localeCompare(b));
+  return cachedCustomers;
 }
 
 module.exports = {
   updateInventoryInSheet,
+  getChallanEntry,
+  loadCustomersFromFile,
 };

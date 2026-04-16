@@ -293,9 +293,22 @@
     <p class="hint">Press Tab or click Next after entering date.</p>
   </div>
 
-  <div class="row">
+  <div class="row" id="customer-row" style="display:none;">
     <label for="customer-name-input">Customer Name</label>
-    <input type="text" id="customer-name-input" placeholder="Enter customer name" />
+    <div class="autocomplete-wrap">
+      <input type="text" id="customer-name-input" placeholder="Search customer" autocomplete="off"
+             oninput="onCustomerInput()" onkeydown="onCustomerKeydown(event)" />
+      <button class="clear-btn" id="clear-customer" onclick="clearCustomer()">✕</button>
+      <div class="dropdown" id="customer-dropdown"></div>
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="edit-challan-input">Edit Existing Challan (optional)</label>
+    <div style="display:flex; gap:8px;">
+      <input type="number" id="edit-challan-input" min="1" placeholder="Enter challan no" />
+      <button class="btn btn-ghost" style="white-space:nowrap;" onclick="loadChallanForEdit()">Load</button>
+    </div>
   </div>
 
   <button class="btn btn-primary btn-full" onclick="goToStep2()">
@@ -331,6 +344,7 @@
     <label for="qty-input">Quantity for <strong id="selected-product-label"></strong></label>
     <input type="number" id="qty-input" min="1" placeholder="Enter quantity"
            onkeydown="onQtyKeydown(event)" />
+    <input type="number" id="price-input" min="0" step="0.01" placeholder="Enter price" style="margin-top:8px;" />
     <p class="hint">Press Enter to add product.</p>
   </div>
 
@@ -365,7 +379,7 @@
 
   <table class="receipt-table">
     <thead>
-      <tr><th>#</th><th>Product</th><th>Qty</th></tr>
+      <tr><th>#</th><th>Product</th><th>Qty</th><th>Price</th></tr>
     </thead>
     <tbody id="receipt-body"></tbody>
   </table>
@@ -393,12 +407,18 @@ let state = {
   date: '',
   customerName: '',
   challan: null,
-  items: [],         // [{product, qty}]
+  items: [],         // [{id, product, qty, price}]
   products: [],      // full list from API
+  customers: [],
   filtered: [],      // current autocomplete results
   focusedIndex: -1,  // keyboard nav index
+  customerFiltered: [],
+  customerFocusedIndex: -1,
+  selectedCustomer: null,
   selectedProduct: null,
+  editingExisting: false,
 };
+let customerSearchTimer = null;
 
 // ── Init ────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', async () => {
@@ -414,6 +434,16 @@ window.addEventListener('DOMContentLoaded', async () => {
   } catch(e) {
     showToast('Could not load products. Check connection.', 'error');
   }
+
+  try {
+    const customerRes = await fetch('/api/customers');
+    const customerData = await customerRes.json();
+    state.customers = Array.isArray(customerData.customers) ? [...new Set(customerData.customers)] : [];
+  } catch (e) {
+    console.error('Customer list fetch failed:', e);
+  }
+
+  setType(state.type);
 });
 
 // ── Type toggle ─────────────────────────────────────────────
@@ -421,17 +451,27 @@ function setType(t) {
   state.type = t;
   document.getElementById('btn-purchases').classList.toggle('active', t === 'purchases');
   document.getElementById('btn-sales').classList.toggle('active', t === 'sales');
+  document.getElementById('customer-row').style.display = t === 'sales' ? 'block' : 'none';
+  if (t !== 'sales') {
+    state.customerName = '';
+    state.selectedCustomer = null;
+    document.getElementById('customer-name-input').value = '';
+    document.getElementById('clear-customer').classList.remove('visible');
+    closeCustomerDropdown();
+  }
 }
 
 // ── Step navigation ─────────────────────────────────────────
 async function goToStep2() {
   const d = document.getElementById('date-input').value;
-  const customerName = document.getElementById('customer-name-input').value.trim();
+  const customerName = state.selectedCustomer || document.getElementById('customer-name-input').value.trim();
   if (!d) { showToast('Please select a date.', 'error'); return; }
-  if (!customerName) { showToast('Please enter customer name.', 'error'); return; }
+  if (state.type === 'sales' && !customerName) { showToast('Please select customer name for sales.', 'error'); return; }
   state.date = d;
-  state.customerName = customerName;
-  state.items = [];
+  state.customerName = state.type === 'sales' ? customerName : '';
+  if (!state.editingExisting) {
+    state.items = [];
+  }
 
   // Fetch challan number
   if (!state.challan) {
@@ -454,7 +494,9 @@ async function goToStep2() {
 }
 
 function goBackToStep1() {
-  state.challan = null; // re-fetch next time
+  if (!state.editingExisting) {
+    state.challan = null; // re-fetch next time
+  }
   showStep('step1');
 }
 
@@ -473,7 +515,7 @@ function goToReceipt() {
     state.type === 'purchases' ? 'PURCHASE CHALLAN' : 'SALES CHALLAN';
   document.getElementById('r-date').textContent = formatDate(state.date);
   document.getElementById('r-challan').textContent = state.challan;
-  document.getElementById('r-customer-name').textContent = state.customerName;
+  document.getElementById('r-customer-name').textContent = state.type === 'sales' ? state.customerName : 'N/A';
 
   const tbody = document.getElementById('receipt-body');
   tbody.innerHTML = state.items.map((item, i) => `
@@ -481,6 +523,7 @@ function goToReceipt() {
       <td>${i + 1}</td>
       <td>${item.product}</td>
       <td>${item.qty}</td>
+      <td>${Number(item.price || 0).toFixed(2)}</td>
     </tr>
   `).join('');
 
@@ -586,21 +629,28 @@ function onQtyKeydown(e) {
 function addItem() {
   if (!state.selectedProduct) { showToast('Select a product first.', 'error'); return; }
   const qtyInput = document.getElementById('qty-input');
+  const priceInput = document.getElementById('price-input');
   const qty = parseInt(qtyInput.value, 10);
+  const price = Number(priceInput.value || 0);
   if (!qty || qty < 1) { showToast('Enter a valid quantity.', 'error'); qtyInput.focus(); return; }
+  if (price < 0) { showToast('Price cannot be negative.', 'error'); priceInput.focus(); return; }
 
-  // Check duplicate
-  const existing = state.items.find(i => i.product === state.selectedProduct);
+  const existing = state.items.find((i) => i.product === state.selectedProduct);
   if (existing) {
-    existing.qty += qty;
+    state.items = state.items.map((item) => (
+      item.id === existing.id
+        ? { ...item, qty: item.qty + qty, price }
+        : item
+    ));
     showToast(`Updated ${state.selectedProduct} → ${existing.qty}`, 'success');
   } else {
-    state.items.push({ product: state.selectedProduct, qty });
+    state.items = [...state.items, { id: Date.now() + Math.random(), product: state.selectedProduct, qty, price }];
   }
 
   // Reset for next product
   clearProduct();
   qtyInput.value = '';
+  priceInput.value = '';
   renderItems();
 
   document.getElementById('review-btn').disabled = state.items.length === 0;
@@ -608,9 +658,22 @@ function addItem() {
 }
 
 function removeItem(i) {
-  state.items.splice(i, 1);
+  state.items = state.items.filter((_, idx) => idx !== i);
   renderItems();
   document.getElementById('review-btn').disabled = state.items.length === 0;
+}
+
+function updateItem(index, field, value) {
+  state.items = state.items.map((item, i) => {
+    if (i !== index) return item;
+    if (field === 'qty') {
+      const qty = parseInt(value, 10) || 0;
+      return { ...item, qty: qty > 0 ? qty : 1 };
+    }
+    const price = Number(value);
+    return { ...item, price: Number.isFinite(price) && price >= 0 ? price : 0 };
+  });
+  renderItems();
 }
 
 function renderItems() {
@@ -622,7 +685,8 @@ function renderItems() {
   list.innerHTML = state.items.map((item, i) => `
     <div class="item-row">
       <span class="item-name">${item.product}</span>
-      <span class="item-qty">Qty: ${item.qty}</span>
+      <input class="item-qty" type="number" min="1" value="${item.qty}" style="width:82px;border:1px solid var(--border);border-radius:5px;padding:4px 6px;" onchange="updateItem(${i}, 'qty', this.value)" />
+      <input type="number" min="0" step="0.01" value="${item.price || 0}" style="width:96px;border:1px solid var(--border);border-radius:5px;padding:4px 6px;" onchange="updateItem(${i}, 'price', this.value)" />
       <button class="remove-btn" onclick="removeItem(${i})" title="Remove">✕</button>
     </div>
   `).join('');
@@ -645,6 +709,8 @@ async function confirmEntry() {
         challan: state.challan,
         customerName: state.customerName,
         items: state.items,
+        entryMode: state.editingExisting ? 'edit' : 'new',
+        editedAt: state.editingExisting ? new Date().toISOString() : '',
       }),
     });
 
@@ -665,7 +731,9 @@ async function confirmEntry() {
       state.challan = null;
       state.items = [];
       state.customerName = '';
+      state.editingExisting = false;
       document.getElementById('customer-name-input').value = '';
+      document.getElementById('edit-challan-input').value = '';
       showStep('step1');
     }, 1800);
 
@@ -674,6 +742,44 @@ async function confirmEntry() {
   } finally {
     btn.classList.remove('loading');
     btn.disabled = false;
+  }
+}
+
+async function loadChallanForEdit() {
+  const challan = document.getElementById('edit-challan-input').value;
+  const type = state.type;
+  if (!challan) {
+    showToast('Enter challan number to edit.', 'error');
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/challan-entry?type=${encodeURIComponent(type)}&challan=${encodeURIComponent(challan)}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to fetch challan');
+    }
+    const data = await res.json();
+    const entry = data.entry;
+    state.editingExisting = true;
+    state.challan = entry.challan;
+    state.date = entry.date;
+    state.customerName = entry.customerName || '';
+    state.items = (entry.items || []).map((item) => ({
+      id: Date.now() + Math.random(),
+      product: item.product,
+      qty: parseInt(item.qty, 10) || 1,
+      price: Number(item.price || 0),
+    }));
+
+    document.getElementById('date-input').value = state.date;
+    document.getElementById('customer-name-input').value = state.customerName;
+    state.selectedCustomer = state.customerName || null;
+    document.getElementById('clear-customer').classList.toggle('visible', Boolean(state.customerName));
+    showToast(`Loaded challan #${state.challan} for editing.`, 'success');
+    await goToStep2();
+  } catch (error) {
+    showToast(error.message || 'Could not load challan.', 'error');
   }
 }
 
@@ -693,9 +799,100 @@ function showToast(msg, type = '') {
   toastTimer = setTimeout(() => { t.className = ''; }, 3000);
 }
 
+// ── Customer autocomplete ─────────────────────────────────────
+function onCustomerInput() {
+  clearTimeout(customerSearchTimer);
+  customerSearchTimer = setTimeout(runCustomerSearch, 120);
+}
+
+function runCustomerSearch() {
+  const q = document.getElementById('customer-name-input').value.trim();
+  const normalized = q.toUpperCase();
+  document.getElementById('clear-customer').classList.toggle('visible', q.length > 0);
+  state.selectedCustomer = null;
+  state.customerName = '';
+
+  if (normalized.length < 1) {
+    closeCustomerDropdown();
+    return;
+  }
+
+  const startsWith = [];
+  const contains = [];
+  state.customers.forEach((name) => {
+    const upper = name.toUpperCase();
+    if (upper.startsWith(normalized)) startsWith.push(name);
+    else if (upper.includes(normalized)) contains.push(name);
+  });
+  state.customerFiltered = [...startsWith, ...contains].slice(0, 12);
+  state.customerFocusedIndex = -1;
+  renderCustomerDropdown();
+}
+
+function onCustomerKeydown(e) {
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    state.customerFocusedIndex = Math.min(state.customerFocusedIndex + 1, state.customerFiltered.length - 1);
+    renderCustomerDropdown();
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    state.customerFocusedIndex = Math.max(state.customerFocusedIndex - 1, 0);
+    renderCustomerDropdown();
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (state.customerFocusedIndex >= 0 && state.customerFiltered[state.customerFocusedIndex]) {
+      selectCustomer(state.customerFiltered[state.customerFocusedIndex]);
+    } else if (state.customerFiltered.length === 1) {
+      selectCustomer(state.customerFiltered[0]);
+    }
+  } else if (e.key === 'Escape') {
+    closeCustomerDropdown();
+  }
+}
+
+function renderCustomerDropdown() {
+  const dd = document.getElementById('customer-dropdown');
+  if (state.customerFiltered.length === 0) {
+    dd.innerHTML = '<div class="dropdown-empty">No customers found</div>';
+  } else {
+    dd.innerHTML = state.customerFiltered.map((name, i) => `
+      <div class="dropdown-item ${i === state.customerFocusedIndex ? 'focused' : ''}"
+           onmousedown="selectCustomer('${String(name).replace(/'/g, "\\'")}')">
+        ${highlightMatch(name, document.getElementById('customer-name-input').value.trim())}
+      </div>
+    `).join('');
+  }
+  dd.classList.add('open');
+}
+
+function selectCustomer(name) {
+  state.selectedCustomer = name;
+  state.customerName = name;
+  document.getElementById('customer-name-input').value = name;
+  document.getElementById('clear-customer').classList.add('visible');
+  closeCustomerDropdown();
+}
+
+function clearCustomer() {
+  state.selectedCustomer = null;
+  state.customerName = '';
+  document.getElementById('customer-name-input').value = '';
+  document.getElementById('clear-customer').classList.remove('visible');
+  closeCustomerDropdown();
+  document.getElementById('customer-name-input').focus();
+}
+
+function closeCustomerDropdown() {
+  document.getElementById('customer-dropdown').classList.remove('open');
+  state.customerFiltered = [];
+}
+
 // Close dropdown on outside click
 document.addEventListener('click', (e) => {
-  if (!e.target.closest('.autocomplete-wrap')) closeDropdown();
+  if (!e.target.closest('.autocomplete-wrap')) {
+    closeDropdown();
+    closeCustomerDropdown();
+  }
 });
 </script>
 

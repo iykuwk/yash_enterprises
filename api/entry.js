@@ -10,13 +10,22 @@ module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).end();
 
-  const { type, date, challan, customerName, items } = req.body;
-  if (!type || !date || !challan || !customerName || !Array.isArray(items) || items.length === 0) {
+  const { type, date, challan, customerName, items, editedAt, entryMode } = req.body;
+  const needsCustomer = type === 'sales';
+  if (!type || !date || !challan || !Array.isArray(items) || items.length === 0 || (needsCustomer && !customerName)) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
   try {
-    const result = await updateInventoryInSheet({ type, date, challan, customerName, items });
+    const result = await updateInventoryInSheet({
+      type,
+      date,
+      challan,
+      customerName: customerName || '',
+      items,
+      editedAt: editedAt || '',
+      entryMode: entryMode || 'new',
+    });
     res.json({
       success: true,
       message: 'Entry saved to Google Sheet.',
@@ -24,7 +33,7 @@ module.exports = async (req, res) => {
     });
 
   } catch (err) {
-    console.error(err);
+    console.error('Entry API failed:', err);
     res.status(500).json({ error: err.message });
   }
 };
