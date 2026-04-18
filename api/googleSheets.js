@@ -29,14 +29,12 @@ function getMonthYearFromDate(dateText) {
 }
 
 function getMonthlyStockSheetName(dateText) {
-  const { month, year } = getMonthYearFromDate(dateText);
-  return `${STOCK_SHEET_PREFIX} ${month} ${year}`;
+  return STOCK_SHEET_NAME;
 }
 
 function getMonthlyTransactionSheetName(type, dateText) {
-  const { month, year } = getMonthYearFromDate(dateText);
   const base = type === 'purchases' ? 'Purchases' : 'Sales';
-  return `${base} ${month} ${year}`;
+  return base;
 }
 
 function parseQty(value) {
@@ -78,6 +76,19 @@ function toColumnLetter(colNum) {
   return out;
 }
 
+function findCustomerNameCell(values) {
+  for (let r = 0; r < values.length; r += 1) {
+    const row = values[r] || [];
+    for (let c = 0; c < row.length; c += 1) {
+      const cellText = String(row[c] || '').trim().toUpperCase();
+      if (cellText === 'CUSTOMER NAME') {
+        return { row: r + 1, col: c + 1 };
+      }
+    }
+  }
+  return null;
+}
+
 function findDeliveryChallanAnchor(values) {
   for (let r = 0; r < values.length; r += 1) {
     const row = values[r] || [];
@@ -92,6 +103,14 @@ function findDeliveryChallanAnchor(values) {
 }
 
 function getCustomerPlacement(values) {
+  const customerCell = findCustomerNameCell(values);
+  if (customerCell) {
+    return {
+      labelCell: `${toColumnLetter(customerCell.col)}${customerCell.row}`,
+      valueCell: `${toColumnLetter(customerCell.col + 1)}${customerCell.row}`,
+    };
+  }
+
   const anchor = findDeliveryChallanAnchor(values);
   if (anchor) {
     return {
@@ -221,12 +240,6 @@ async function ensureLogHeaders(sheets) {
 
 async function writeTransactionSheet({ sheets, type, date, challan, customerName, mergedQtyByProduct }) {
   const txSheetName = getMonthlyTransactionSheetName(type, date);
-  const txTemplateSheetName = type === 'purchases' ? PURCHASE_TEMPLATE_SHEET_NAME : SALES_TEMPLATE_SHEET_NAME;
-  await ensureSheetFromTemplate({
-    sheets,
-    templateTitle: txTemplateSheetName,
-    targetTitle: txSheetName,
-  });
 
   const txRange = `'${txSheetName}'!A1:ZZ300`;
   const txRes = await sheets.spreadsheets.values.get({
@@ -234,7 +247,6 @@ async function writeTransactionSheet({ sheets, type, date, challan, customerName
     range: txRange,
   });
   const values = txRes.data.values || [];
-  const { labelCell, valueCell } = getCustomerPlacement(values);
 
   const row3 = values[2] || [];
   const row4 = values[3] || [];
@@ -252,17 +264,17 @@ async function writeTransactionSheet({ sheets, type, date, challan, customerName
 
   const txUpdates = [
     {
-      range: `'${txSheetName}'!${toColumnLetter(targetCol)}2:${toColumnLetter(targetCol)}4`,
-      values: [[date], [String(challan)], ['Qty']],
+      range: `'${txSheetName}'!${toColumnLetter(targetCol)}2`,
+      values: [[date]],
     },
     {
-      range: `'${txSheetName}'!${labelCell}:${valueCell}`,
-      values: [['Customer Name', customerName || '']],
+      range: `'${txSheetName}'!${toColumnLetter(targetCol)}4`,
+      values: [[customerName || '']],
     },
   ];
 
   const productRowMap = {};
-  for (let r = 4; r < values.length; r += 1) {
+  for (let r = 6; r < values.length; r += 1) {
     const name = (values[r][1] || '').trim().toUpperCase();
     if (name) productRowMap[name] = r + 1; // sheet row
   }
@@ -292,25 +304,6 @@ async function updateInventoryInSheet({ type, date, challan, customerName, items
     if (cleanItems.length === 0) {
       throw new Error('No valid items found in request body.');
     }
-    const stockSheetName = getMonthlyStockSheetName(date);
-    await ensureSheetFromTemplate({
-      sheets,
-      templateTitle: STOCK_TEMPLATE_SHEET_NAME,
-      targetTitle: stockSheetName,
-    });
-    const range = `'${stockSheetName}'!B4:F200`;
-
-    const { data } = await sheets.spreadsheets.values.get({
-      spreadsheetId: SHEET_ID,
-      range,
-    });
-
-    const rows = data.values || [];
-    const rowMap = {};
-    rows.forEach((row, idx) => {
-      const product = (row[0] || '').trim().toUpperCase();
-      if (product) rowMap[product] = { rowIndex: idx + 4, row };
-    });
 
     const mergedQtyByProduct = {};
     for (const item of cleanItems) {
@@ -319,53 +312,7 @@ async function updateInventoryInSheet({ type, date, challan, customerName, items
       mergedQtyByProduct[key] = (mergedQtyByProduct[key] || 0) + (parseInt(item.qty, 10) || 0);
     }
 
-    const updates = [];
-    const notFoundProducts = [];
-
-    Object.entries(mergedQtyByProduct).forEach(([key, qty]) => {
-      const target = rowMap[key];
-      if (!target) {
-        notFoundProducts.push(key);
-        return;
-      }
-
-      const opening = parseQty(target.row[1]);
-      const purchases = parseQty(target.row[2]);
-      const sales = parseQty(target.row[3]);
-
-      const nextPurchases = type === 'purchases' ? purchases + qty : purchases;
-      const nextSales = type === 'sales' ? sales + qty : sales;
-      const nextBalance = opening + nextPurchases - nextSales;
-
-      updates.push({
-        range: `'${stockSheetName}'!D${target.rowIndex}:F${target.rowIndex}`,
-        values: [[asUnit(nextPurchases), asUnit(nextSales), asUnit(nextBalance)]],
-      });
-    });
-
     await writeTransactionSheet({ sheets, type, date, challan, customerName, mergedQtyByProduct });
-
-    const customerAreaRes = await sheets.spreadsheets.values.get({
-      spreadsheetId: SHEET_ID,
-      range: `'${stockSheetName}'!A1:ZZ220`,
-    });
-    const customerAreaValues = customerAreaRes.data.values || [];
-    const { labelCell, valueCell } = getCustomerPlacement(customerAreaValues);
-
-    updates.push({
-      range: `'${stockSheetName}'!${labelCell}:${valueCell}`,
-      values: [['Customer Name', customerName || '']],
-    });
-
-    if (updates.length > 0) {
-      await sheets.spreadsheets.values.batchUpdate({
-        spreadsheetId: SHEET_ID,
-        requestBody: {
-          valueInputOption: 'RAW',
-          data: updates,
-        },
-      });
-    }
 
     await ensureLogHeaders(sheets);
     const nowIso = new Date().toISOString();
@@ -391,8 +338,8 @@ async function updateInventoryInSheet({ type, date, challan, customerName, items
     });
 
     return {
-      updatedProducts: updates.length,
-      notFoundProducts,
+      updatedProducts: Object.keys(mergedQtyByProduct).length,
+      notFoundProducts: [],
     };
   } catch (error) {
     console.error('Google Sheets write failed:', {
