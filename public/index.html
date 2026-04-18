@@ -30,10 +30,7 @@
     padding: 24px 16px 60px;
   }
 
-  header {
-    text-align: center;
-    margin-bottom: 28px;
-  }
+  header { text-align: center; margin-bottom: 28px; }
   header h1 { font-size: 1.5rem; font-weight: 700; color: var(--primary); }
   header p  { font-size: 0.85rem; color: var(--muted); margin-top: 4px; }
 
@@ -48,13 +45,12 @@
   }
 
   .card h2 {
-    font-size: 1rem;
+    font-size: .8rem;
     font-weight: 600;
     margin-bottom: 18px;
     color: var(--muted);
     text-transform: uppercase;
     letter-spacing: .05em;
-    font-size: .8rem;
   }
 
   label {
@@ -82,21 +78,13 @@
 
   .row { margin-bottom: 16px; }
 
-  .type-toggle {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 18px;
-  }
+  .type-toggle { display: flex; gap: 10px; margin-bottom: 18px; }
   .type-toggle button {
-    flex: 1;
-    padding: 10px;
+    flex: 1; padding: 10px;
     border: 2px solid var(--border);
-    border-radius: 8px;
-    background: #fff;
-    font-size: .9rem;
-    font-weight: 600;
-    cursor: pointer;
-    color: var(--muted);
+    border-radius: 8px; background: #fff;
+    font-size: .9rem; font-weight: 600;
+    cursor: pointer; color: var(--muted);
     transition: all .15s;
   }
   .type-toggle button.active {
@@ -105,7 +93,6 @@
     color: var(--primary);
   }
 
-  /* Autocomplete */
   .autocomplete-wrap { position: relative; }
   .autocomplete-wrap input { padding-right: 36px; }
   .clear-btn {
@@ -124,30 +111,21 @@
     border: 1px solid var(--border);
     border-radius: 8px;
     box-shadow: 0 6px 20px rgba(0,0,0,0.12);
-    max-height: 220px;
-    overflow-y: auto;
-    z-index: 100;
-    display: none;
+    max-height: 220px; overflow-y: auto;
+    z-index: 100; display: none;
   }
   .dropdown.open { display: block; }
   .dropdown-item {
-    padding: 10px 14px;
-    font-size: .88rem;
-    cursor: pointer;
-    transition: background .1s;
+    padding: 10px 14px; font-size: .88rem;
+    cursor: pointer; transition: background .1s;
   }
   .dropdown-item:hover,
   .dropdown-item.focused { background: var(--highlight); color: var(--primary); }
-  .dropdown-empty {
-    padding: 12px 14px;
-    font-size: .85rem;
-    color: var(--muted);
-  }
+  .dropdown-empty { padding: 12px 14px; font-size: .85rem; color: var(--muted); }
 
   .btn {
     display: inline-flex; align-items: center; justify-content: center; gap: 7px;
-    padding: 10px 20px;
-    border: none; border-radius: 8px;
+    padding: 10px 20px; border: none; border-radius: 8px;
     font-size: .9rem; font-weight: 600;
     cursor: pointer; transition: background .15s, transform .1s;
   }
@@ -156,42 +134,26 @@
   .btn-primary:hover { background: var(--primary-hover); }
   .btn-success { background: var(--success); color: #fff; }
   .btn-success:hover { background: #046344; }
-  .btn-ghost {
-    background: transparent; border: 1.5px solid var(--border);
-    color: var(--muted);
-  }
+  .btn-ghost { background: transparent; border: 1.5px solid var(--border); color: var(--muted); }
   .btn-ghost:hover { border-color: var(--danger); color: var(--danger); }
   .btn-full { width: 100%; margin-top: 6px; }
 
   .challan-badge {
     display: inline-block;
-    background: var(--highlight);
-    color: var(--primary);
-    border: 1px solid #bfdbfe;
-    border-radius: 6px;
-    padding: 4px 12px;
-    font-weight: 700;
-    font-size: 1.1rem;
+    background: var(--highlight); color: var(--primary);
+    border: 1px solid #bfdbfe; border-radius: 6px;
+    padding: 4px 12px; font-weight: 700; font-size: 1.1rem;
     margin-bottom: 4px;
   }
 
-  /* Items list */
   .items-list { margin-top: 14px; }
   .item-row {
     display: flex; align-items: center; gap: 10px;
     padding: 10px 12px;
-    background: var(--highlight);
-    border: 1px solid #bfdbfe;
-    border-radius: 8px;
-    margin-bottom: 8px;
-    font-size: .88rem;
+    background: var(--highlight); border: 1px solid #bfdbfe;
+    border-radius: 8px; margin-bottom: 8px; font-size: .88rem;
   }
   .item-row .item-name { flex: 1; font-weight: 600; }
-  .item-row .item-qty {
-    background: var(--primary); color: #fff;
-    border-radius: 5px; padding: 2px 9px;
-    font-size: .82rem; font-weight: 700; white-space: nowrap;
-  }
   .item-row .remove-btn {
     background: none; border: none; cursor: pointer;
     color: var(--danger); font-size: 1rem; padding: 0 4px;
@@ -199,20 +161,15 @@
   }
   .item-row .remove-btn:hover { opacity: 1; }
 
-  /* Receipt */
   .receipt-header {
-    text-align: center;
-    padding-bottom: 14px;
-    border-bottom: 2px dashed var(--border);
-    margin-bottom: 16px;
+    text-align: center; padding-bottom: 14px;
+    border-bottom: 2px dashed var(--border); margin-bottom: 16px;
   }
   .receipt-header h3 { font-size: 1.1rem; font-weight: 700; }
   .receipt-meta { font-size: .82rem; color: var(--muted); margin-top: 5px; }
   .receipt-meta span { font-weight: 600; color: var(--text); }
 
-  .receipt-table {
-    width: 100%; border-collapse: collapse; font-size: .88rem;
-  }
+  .receipt-table { width: 100%; border-collapse: collapse; font-size: .88rem; }
   .receipt-table th {
     text-align: left; padding: 7px 10px;
     background: var(--bg); color: var(--muted);
@@ -222,50 +179,37 @@
   .receipt-table td:last-child { text-align: right; font-weight: 700; }
   .receipt-table tr:last-child td { border-bottom: none; }
 
-  .action-row {
-    display: flex; gap: 10px; margin-top: 18px;
-  }
+  .action-row { display: flex; gap: 10px; margin-top: 18px; }
   .action-row .btn { flex: 1; }
 
-  /* Toast */
   #toast {
     position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
     background: #1f2937; color: #fff;
     padding: 11px 22px; border-radius: 8px;
     font-size: .88rem; font-weight: 500;
     box-shadow: 0 4px 16px rgba(0,0,0,.25);
-    transition: transform .3s ease;
-    z-index: 999; white-space: nowrap;
+    transition: transform .3s ease; z-index: 999; white-space: nowrap;
   }
   #toast.show { transform: translateX(-50%) translateY(0); }
   #toast.error { background: var(--danger); }
   #toast.success { background: var(--success); }
 
-  /* Spinner */
   .spinner {
     width: 16px; height: 16px;
     border: 2.5px solid rgba(255,255,255,.4);
-    border-top-color: #fff;
-    border-radius: 50%;
-    animation: spin .6s linear infinite;
-    display: none;
+    border-top-color: #fff; border-radius: 50%;
+    animation: spin .6s linear infinite; display: none;
   }
   .loading .spinner { display: inline-block; }
   .loading .btn-text { display: none; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* Step visibility */
   .step { display: none; }
   .step.active { display: block; }
 
-  .hint {
-    font-size: .78rem; color: var(--muted);
-    margin-top: 5px;
-  }
+  .hint { font-size: .78rem; color: var(--muted); margin-top: 5px; }
 
-  @media (max-width: 480px) {
-    .card { padding: 18px 16px; }
-  }
+  @media (max-width: 480px) { .card { padding: 18px 16px; } }
 </style>
 </head>
 <body>
@@ -275,7 +219,7 @@
   <p>JUBILANT Inventory Entry System</p>
 </header>
 
-<!-- STEP 1: Type + Date -->
+<!-- STEP 1 -->
 <div class="card step active" id="step1">
   <h2>Step 1 — Entry Details</h2>
 
@@ -290,7 +234,6 @@
   <div class="row">
     <label for="date-input">Date</label>
     <input type="date" id="date-input" />
-    <p class="hint">Press Tab or click Next after entering date.</p>
   </div>
 
   <div class="row" id="customer-row" style="display:none;">
@@ -311,12 +254,10 @@
     </div>
   </div>
 
-  <button class="btn btn-primary btn-full" onclick="goToStep2()">
-    Next →
-  </button>
+  <button class="btn btn-primary btn-full" onclick="goToStep2()">Next →</button>
 </div>
 
-<!-- STEP 2: Products -->
+<!-- STEP 2 -->
 <div class="card step" id="step2">
   <h2>Step 2 — Add Products</h2>
 
@@ -328,7 +269,6 @@
     <button class="btn btn-ghost" style="font-size:.8rem; padding:6px 12px" onclick="goBackToStep1()">← Edit</button>
   </div>
 
-  <!-- Product search -->
   <div class="row">
     <label for="product-input">Product <span style="color:var(--muted);font-weight:400">(type to search)</span></label>
     <div class="autocomplete-wrap">
@@ -339,12 +279,10 @@
     </div>
   </div>
 
-  <!-- Qty (shown after product selected) -->
   <div class="row" id="qty-row" style="display:none;">
     <label for="qty-input">Quantity for <strong id="selected-product-label"></strong></label>
     <input type="number" id="qty-input" min="1" placeholder="Enter quantity"
            onkeydown="onQtyKeydown(event)" />
-    <input type="number" id="price-input" min="0" step="0.01" placeholder="Enter price" style="margin-top:8px;" />
     <p class="hint">Press Enter to add product.</p>
   </div>
 
@@ -352,7 +290,6 @@
     + Add Product
   </button>
 
-  <!-- Items added so far -->
   <div class="items-list" id="items-list"></div>
 
   <div style="margin-top:18px; display:flex; gap:10px;">
@@ -363,7 +300,7 @@
   </div>
 </div>
 
-<!-- STEP 3: Receipt -->
+<!-- STEP 3 -->
 <div class="card step" id="step3">
   <h2>Step 3 — Confirm Entry</h2>
 
@@ -379,7 +316,7 @@
 
   <table class="receipt-table">
     <thead>
-      <tr><th>#</th><th>Product</th><th>Qty</th><th>Price</th></tr>
+      <tr><th>#</th><th>Product</th><th>Qty</th></tr>
     </thead>
     <tbody id="receipt-body"></tbody>
   </table>
@@ -397,21 +334,19 @@
   </p>
 </div>
 
-<!-- Toast -->
 <div id="toast"></div>
 
 <script>
-// ── State ────────────────────────────────────────────────────
 let state = {
   type: 'purchases',
   date: '',
   customerName: '',
   challan: null,
-  items: [],         // [{id, product, qty, price}]
-  products: [],      // full list from API
+  items: [],
+  products: [],
   customers: [],
-  filtered: [],      // current autocomplete results
-  focusedIndex: -1,  // keyboard nav index
+  filtered: [],
+  focusedIndex: -1,
   customerFiltered: [],
   customerFocusedIndex: -1,
   selectedCustomer: null,
@@ -420,13 +355,10 @@ let state = {
 };
 let customerSearchTimer = null;
 
-// ── Init ────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', async () => {
-  // Set today's date
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('date-input').value = today;
 
-  // Load products
   try {
     const res = await fetch('/api/products');
     const data = await res.json();
@@ -436,17 +368,16 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   try {
-    const customerRes = await fetch('/api/customers');
-    const customerData = await customerRes.json();
-    state.customers = Array.isArray(customerData.customers) ? [...new Set(customerData.customers)] : [];
-  } catch (e) {
+    const res = await fetch('/api/customers');
+    const data = await res.json();
+    state.customers = Array.isArray(data.customers) ? [...new Set(data.customers)] : [];
+  } catch(e) {
     console.error('Customer list fetch failed:', e);
   }
 
   setType(state.type);
 });
 
-// ── Type toggle ─────────────────────────────────────────────
 function setType(t) {
   state.type = t;
   document.getElementById('btn-purchases').classList.toggle('active', t === 'purchases');
@@ -461,19 +392,15 @@ function setType(t) {
   }
 }
 
-// ── Step navigation ─────────────────────────────────────────
 async function goToStep2() {
   const d = document.getElementById('date-input').value;
   const customerName = state.selectedCustomer || document.getElementById('customer-name-input').value.trim();
   if (!d) { showToast('Please select a date.', 'error'); return; }
-  if (state.type === 'sales' && !customerName) { showToast('Please select customer name for sales.', 'error'); return; }
+  if (state.type === 'sales' && !customerName) { showToast('Please enter customer name for sales.', 'error'); return; }
   state.date = d;
   state.customerName = state.type === 'sales' ? customerName : '';
-  if (!state.editingExisting) {
-    state.items = [];
-  }
+  if (!state.editingExisting) state.items = [];
 
-  // Fetch challan number
   if (!state.challan) {
     try {
       const res = await fetch('/api/challan');
@@ -494,9 +421,7 @@ async function goToStep2() {
 }
 
 function goBackToStep1() {
-  if (!state.editingExisting) {
-    state.challan = null; // re-fetch next time
-  }
+  if (!state.editingExisting) state.challan = null;
   showStep('step1');
 }
 
@@ -506,11 +431,8 @@ function goBackToStep2() {
 }
 
 function goToReceipt() {
-  if (state.items.length === 0) {
-    showToast('Add at least one product.', 'error');
-    return;
-  }
-  // Populate receipt
+  if (state.items.length === 0) { showToast('Add at least one product.', 'error'); return; }
+
   document.getElementById('receipt-type-label').textContent =
     state.type === 'purchases' ? 'PURCHASE CHALLAN' : 'SALES CHALLAN';
   document.getElementById('r-date').textContent = formatDate(state.date);
@@ -523,7 +445,6 @@ function goToReceipt() {
       <td>${i + 1}</td>
       <td>${item.product}</td>
       <td>${item.qty}</td>
-      <td>${Number(item.price || 0).toFixed(2)}</td>
     </tr>
   `).join('');
 
@@ -535,25 +456,21 @@ function showStep(id) {
   document.getElementById(id).classList.add('active');
 }
 
-// ── Product autocomplete ─────────────────────────────────────
+// ── Product autocomplete ──────────────────────────────────────
 function onProductInput() {
   const q = document.getElementById('product-input').value.trim().toUpperCase();
-  const clearBtn = document.getElementById('clear-product');
-
-  clearBtn.classList.toggle('visible', q.length > 0);
+  document.getElementById('clear-product').classList.toggle('visible', q.length > 0);
   document.getElementById('qty-row').style.display = 'none';
   document.getElementById('add-btn').style.display = 'none';
   state.selectedProduct = null;
 
   if (q.length < 1) { closeDropdown(); return; }
-
   state.filtered = state.products.filter(p => p.toUpperCase().includes(q)).slice(0, 12);
   state.focusedIndex = -1;
   renderDropdown();
 }
 
 function onProductKeydown(e) {
-  const dd = document.getElementById('product-dropdown');
   if (e.key === 'ArrowDown') {
     e.preventDefault();
     state.focusedIndex = Math.min(state.focusedIndex + 1, state.filtered.length - 1);
@@ -621,7 +538,7 @@ function closeDropdown() {
   state.filtered = [];
 }
 
-// ── Quantity handling ────────────────────────────────────────
+// ── Quantity ──────────────────────────────────────────────────
 function onQtyKeydown(e) {
   if (e.key === 'Enter') { e.preventDefault(); addItem(); }
 }
@@ -629,31 +546,23 @@ function onQtyKeydown(e) {
 function addItem() {
   if (!state.selectedProduct) { showToast('Select a product first.', 'error'); return; }
   const qtyInput = document.getElementById('qty-input');
-  const priceInput = document.getElementById('price-input');
   const qty = parseInt(qtyInput.value, 10);
-  const price = Number(priceInput.value || 0);
   if (!qty || qty < 1) { showToast('Enter a valid quantity.', 'error'); qtyInput.focus(); return; }
-  if (price < 0) { showToast('Price cannot be negative.', 'error'); priceInput.focus(); return; }
 
-  const existing = state.items.find((i) => i.product === state.selectedProduct);
+  const existing = state.items.find(i => i.product === state.selectedProduct);
   if (existing) {
-    state.items = state.items.map((item) => (
-      item.id === existing.id
-        ? { ...item, qty: item.qty + qty, price }
-        : item
-    ));
-    showToast(`Updated ${state.selectedProduct} → ${existing.qty}`, 'success');
+    state.items = state.items.map(item =>
+      item.id === existing.id ? { ...item, qty: item.qty + qty } : item
+    );
+    showToast(`Updated ${state.selectedProduct} → ${existing.qty + qty}`, 'success');
   } else {
-    state.items = [...state.items, { id: Date.now() + Math.random(), product: state.selectedProduct, qty, price }];
+    state.items = [...state.items, { id: Date.now() + Math.random(), product: state.selectedProduct, qty }];
   }
 
-  // Reset for next product
   clearProduct();
   qtyInput.value = '';
-  priceInput.value = '';
   renderItems();
-
-  document.getElementById('review-btn').disabled = state.items.length === 0;
+  document.getElementById('review-btn').disabled = false;
   document.getElementById('product-input').focus();
 }
 
@@ -663,17 +572,12 @@ function removeItem(i) {
   document.getElementById('review-btn').disabled = state.items.length === 0;
 }
 
-function updateItem(index, field, value) {
+function updateItemQty(index, value) {
   state.items = state.items.map((item, i) => {
     if (i !== index) return item;
-    if (field === 'qty') {
-      const qty = parseInt(value, 10) || 0;
-      return { ...item, qty: qty > 0 ? qty : 1 };
-    }
-    const price = Number(value);
-    return { ...item, price: Number.isFinite(price) && price >= 0 ? price : 0 };
+    const qty = parseInt(value, 10) || 0;
+    return { ...item, qty: qty > 0 ? qty : 1 };
   });
-  renderItems();
 }
 
 function renderItems() {
@@ -685,15 +589,16 @@ function renderItems() {
   list.innerHTML = state.items.map((item, i) => `
     <div class="item-row">
       <span class="item-name">${item.product}</span>
-      <input class="item-qty" type="number" min="1" value="${item.qty}" style="width:82px;border:1px solid var(--border);border-radius:5px;padding:4px 6px;" onchange="updateItem(${i}, 'qty', this.value)" />
-      <input type="number" min="0" step="0.01" value="${item.price || 0}" style="width:96px;border:1px solid var(--border);border-radius:5px;padding:4px 6px;" onchange="updateItem(${i}, 'price', this.value)" />
+      <input type="number" min="1" value="${item.qty}"
+        style="width:82px;border:1px solid var(--border);border-radius:5px;padding:4px 6px;"
+        onchange="updateItemQty(${i}, this.value)" />
       <button class="remove-btn" onclick="removeItem(${i})" title="Remove">✕</button>
     </div>
   `).join('');
   document.getElementById('review-btn').disabled = false;
 }
 
-// ── Confirm & Download ───────────────────────────────────────
+// ── Confirm ───────────────────────────────────────────────────
 async function confirmEntry() {
   const btn = document.getElementById('confirm-btn');
   btn.classList.add('loading');
@@ -708,7 +613,7 @@ async function confirmEntry() {
         date: state.date,
         challan: state.challan,
         customerName: state.customerName,
-        items: state.items,
+        items: state.items.map(({ product, qty }) => ({ product, qty })),
         entryMode: state.editingExisting ? 'edit' : 'new',
         editedAt: state.editingExisting ? new Date().toISOString() : '',
       }),
@@ -726,7 +631,6 @@ async function confirmEntry() {
       showToast('Entry saved to Google Sheet.', 'success');
     }
 
-    // Reset for next entry
     setTimeout(() => {
       state.challan = null;
       state.items = [];
@@ -747,14 +651,10 @@ async function confirmEntry() {
 
 async function loadChallanForEdit() {
   const challan = document.getElementById('edit-challan-input').value;
-  const type = state.type;
-  if (!challan) {
-    showToast('Enter challan number to edit.', 'error');
-    return;
-  }
+  if (!challan) { showToast('Enter challan number to edit.', 'error'); return; }
 
   try {
-    const res = await fetch(`/api/challan-entry?type=${encodeURIComponent(type)}&challan=${encodeURIComponent(challan)}`);
+    const res = await fetch(`/api/challan-entry?type=${encodeURIComponent(state.type)}&challan=${encodeURIComponent(challan)}`);
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error || 'Failed to fetch challan');
@@ -765,11 +665,10 @@ async function loadChallanForEdit() {
     state.challan = entry.challan;
     state.date = entry.date;
     state.customerName = entry.customerName || '';
-    state.items = (entry.items || []).map((item) => ({
+    state.items = (entry.items || []).map(item => ({
       id: Date.now() + Math.random(),
       product: item.product,
       qty: parseInt(item.qty, 10) || 1,
-      price: Number(item.price || 0),
     }));
 
     document.getElementById('date-input').value = state.date;
@@ -778,12 +677,12 @@ async function loadChallanForEdit() {
     document.getElementById('clear-customer').classList.toggle('visible', Boolean(state.customerName));
     showToast(`Loaded challan #${state.challan} for editing.`, 'success');
     await goToStep2();
-  } catch (error) {
+  } catch(error) {
     showToast(error.message || 'Could not load challan.', 'error');
   }
 }
 
-// ── Helpers ──────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────
 function formatDate(d) {
   if (!d) return '';
   const [y, m, day] = d.split('-');
@@ -812,14 +711,11 @@ function runCustomerSearch() {
   state.selectedCustomer = null;
   state.customerName = '';
 
-  if (normalized.length < 1) {
-    closeCustomerDropdown();
-    return;
-  }
+  if (!normalized) { closeCustomerDropdown(); return; }
 
   const startsWith = [];
   const contains = [];
-  state.customers.forEach((name) => {
+  state.customers.forEach(name => {
     const upper = name.toUpperCase();
     if (upper.startsWith(normalized)) startsWith.push(name);
     else if (upper.includes(normalized)) contains.push(name);
@@ -887,7 +783,6 @@ function closeCustomerDropdown() {
   state.customerFiltered = [];
 }
 
-// Close dropdown on outside click
 document.addEventListener('click', (e) => {
   if (!e.target.closest('.autocomplete-wrap')) {
     closeDropdown();
@@ -895,6 +790,5 @@ document.addEventListener('click', (e) => {
   }
 });
 </script>
-
 </body>
 </html>

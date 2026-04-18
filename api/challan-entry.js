@@ -11,10 +11,10 @@ module.exports = async (req, res) => {
     if (req.method === 'GET') {
       const { type, challan } = req.query || {};
       if (!type || !challan) {
-        return res.status(400).json({ error: 'type and challan are required' });
+        return res.status(400).json({ error: 'type and challan query params are required' });
       }
       const entry = await getChallanEntry({ type, challan });
-      if (!entry) return res.status(404).json({ error: 'Challan not found' });
+      if (!entry) return res.status(404).json({ error: 'Challan not found in Entry Log' });
       return res.json({ entry });
     }
 
@@ -23,7 +23,6 @@ module.exports = async (req, res) => {
       if (!type || !date || !challan || !Array.isArray(items) || items.length === 0) {
         return res.status(400).json({ error: 'Missing required fields' });
       }
-
       if (type === 'sales' && !String(customerName || '').trim()) {
         return res.status(400).json({ error: 'Customer name is required for sales' });
       }
@@ -44,7 +43,7 @@ module.exports = async (req, res) => {
 
     return res.status(405).end();
   } catch (error) {
-    console.error('Challan entry API failed:', error);
+    console.error('[challan-entry] Error:', error.message);
     return res.status(500).json({ error: error.message || 'Server error' });
   }
 };

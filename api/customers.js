@@ -12,7 +12,7 @@ module.exports = async (req, res) => {
     const customers = await loadCustomersFromFile();
     return res.json({ customers });
   } catch (error) {
-    console.error('Customer list load failed:', error);
+    console.error('[customers] Error:', error.message);
     return res.status(500).json({ error: 'Failed to load customer list' });
   }
 };

@@ -1,6 +1,3 @@
-// Shared data module used by all API functions
-// Product list extracted from JUBILANT STOCK APRIL 26 sheet
-
 const PRODUCTS = [
   "JUBIFIX ACRO BLACK 450 GMS","JUBIFIX ACRO WHITE 450 GMS","JUBIFIX CONSTRO 360 GMS",
   "JUBIFIX CRAXO 1KG","JUBIFIX CRAXO 500 GMS","JUBIFIX GP PRO BLACK 260 ML",
